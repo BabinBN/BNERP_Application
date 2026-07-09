@@ -1,0 +1,13 @@
+{
+  "name": "ERP_Application-cds",
+  "version": "1.0.0",
+  "dependencies": {
+    "@sap/cds": "^8.9.10"
+  },
+  "devDependencies": {
+    "@sap/cds-dk": "^9.9.3"
+  },
+  "sapux": [
+    "app/purchase_order"
+  ]
+}
