@@ -5,9 +5,17 @@
     "@sap/cds": "^8.9.10"
   },
   "devDependencies": {
-    "@sap/cds-dk": "^9.9.3"
+    "@sap/cds-dk": "^9.9.3",
+    "rimraf": "^5.0.5",
+    "mbt": "^1.2.49"
   },
   "sapux": [
+    "app/purchase_order",
     "app/purchase_order"
-  ]
+  ],
+  "scripts": {
+    "undeploy": "cf undeploy ERP_Application --delete-services --delete-service-keys --delete-service-brokers",
+    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1"
+  }
 }

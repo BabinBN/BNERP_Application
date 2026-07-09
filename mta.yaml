@@ -1,47 +1,94 @@
 _schema-version: 3.3.0
 ID: ERP_Application
+description: A simple CAP project.
 version: 1.0.0-SNAPSHOT
-description: "A simple CAP project."
-parameters:
-  enable-parallel-deployments: true
 modules:
-  - name: ERP_Application-srv
-    type: java
-    path: srv
-    parameters:
-      instances: 1
-      buildpack: sap_java_buildpack_jakarta
+- name: ERP_Application-srv
+  type: java
+  path: srv
+  properties:
+    JBP_CONFIG_COMPONENTS: 'jres: [''com.sap.xs.java.buildpack.jre.SAPMachineJRE'']'
+    JBP_CONFIG_SAP_MACHINE_JRE: '{ version: 21.+ }'
+    SPRING_PROFILES_ACTIVE: cloud,sandbox
+  # requires:
+  # - name: ERP_Application-db
+  provides:
+  - name: srv-api
     properties:
-      SPRING_PROFILES_ACTIVE: cloud,sandbox
-      JBP_CONFIG_COMPONENTS: "jres: ['com.sap.xs.java.buildpack.jre.SAPMachineJRE']"
-      JBP_CONFIG_SAP_MACHINE_JRE: '{ version: 21.+ }'
-    build-parameters:
-      builder: custom
-      commands:
-        - mvn clean package -DskipTests=true --batch-mode
-      build-result: target/*-exec.jar
-    provides:
-      - name: srv-api # required by consumers of CAP services (e.g. approuter)
-        properties:
-          srv-url: ${default-url}
-    requires:
-      - name: ERP_Application-db
-
-  - name: ERP_Application-db-deployer
-    type: hdb
-    path: db
+      srv-url: ${default-url}
+  parameters:
+    buildpack: sap_java_buildpack_jakarta
+    instances: 1
+  build-parameters:
+    build-result: target/*-exec.jar
+    builder: custom
+    commands:
+    - mvn clean package -DskipTests=true --batch-mode
+# - name: ERP_Application-db-deployer
+#   type: hdb
+#   path: db
+#   requires:
+#   - name: ERP_Application-db
+#   parameters:
+#     buildpack: nodejs_buildpack
+#   build-parameters:
+#     builder: custom
+#     commands:
+#     - npm run build
+- name: ERP_Application-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: ERP_Application-repo-host
     parameters:
-      buildpack: nodejs_buildpack
-    build-parameters:
-      builder: custom
-      commands:
-        - npm run build
+      content-target: true
+  build-parameters:
+    build-result: resources
     requires:
-      - name: ERP_Application-db
-
+    - artifacts:
+      - purchaseorder.zip
+      name: purchaseorder
+      target-path: resources/
+- name: purchaseorder
+  type: html5
+  path: app/purchase_order
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
 resources:
-  - name: ERP_Application-db
-    type: com.sap.xs.hdi-container
-    parameters:
-      service: hana
-      service-plan: hdi-shared
+# - name: ERP_Application-db
+#   type: com.sap.xs.hdi-container
+#   parameters:
+#     service: hana
+#     service-plan: hdi-shared
+- name: ERP_Application-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: ERP_Application-html5-service
+    service-plan: app-host
+- name: ERP_Application-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: false
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: ERP_Application-destination-service
+    service-plan: lite
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
