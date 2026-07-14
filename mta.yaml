@@ -10,6 +10,9 @@ modules:
     JBP_CONFIG_COMPONENTS: 'jres: [''com.sap.xs.java.buildpack.jre.SAPMachineJRE'']'
     JBP_CONFIG_SAP_MACHINE_JRE: '{ version: 21.+ }'
     SPRING_PROFILES_ACTIVE: cloud,sandbox
+  requires:
+  - name: ERP_Application-destination-service
+  - name: uaa_ERP_Application
   # requires:
   # - name: ERP_Application-db
   provides:
